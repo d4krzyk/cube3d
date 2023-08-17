@@ -19,9 +19,10 @@ This project showcases a 3D cube rendered using WebGL, with cel-shading for a ca
 
    ```bash
    git clone https://github.com/d4krzyk/cube3d.git
-Open the project directory and serve it using a local server. You can use tools like http-server or live-server.
 
-Access the project in your web browser using the local server's URL.
+2. Open the project directory and serve it using a local server. You can use tools like http-server or live-server.
+
+3. Access the project in your web browser using the local server's URL.
 
 ## How it Works?
 The project uses WebGL to render the 3D cube and apply cel-shading and texture mapping effects.
