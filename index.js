@@ -136,15 +136,15 @@ const vertexShaderSource = /*glsl*/`
 
     attribute vec3 aVertexNormal;
     varying vec3 vNormal;
-
+    varying vec3 vViewDir;
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     void main(void) {
 
         // Normalna wierzchołka (użyj swoich danych)
-        vNormal = aVertexNormal;
-
+        vNormal = mat3(uModelViewMatrix) * aVertexNormal;
+        vViewDir = normalize(-(uModelViewMatrix * vec4(aVertexPosition, 1.0)).xyz);
         // Przekazanie normalnej do shadera fragmentów
         gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aVertexPosition, 1.0);
         vTextureCoord = aTextureCoord;  // Przepisywanie współrzędnych tekstur
@@ -159,18 +159,16 @@ const fragmentShaderSource = /*glsl*/`
       varying highp vec2 vTextureCoord;  // Współrzędne tekstur
       uniform sampler2D uSampler;  // Tekstura
 
-
-      
       void main(void) {
-        /*vec2 p = v_texcoord;
-        vec3 ambient = vec3(0.4863, 0.4863, 0.4863);
-        vec3 direction = vec3(0.9137, 0.6, 0.549);
-        vec3 lightColor = vec3(1.0);
-        float incidence = max(dot(vNormal.xyz, direction), - 1.0);
-        vec3 light = clamp(ambient + lightColor * incidence, 0.0, 1.0);
-      
-        vec3 color = (0.2 * checker(p, 8.0) + vNormal.rgb);*/
-        gl_FragColor = texture2D(uSampler, vTextureCoord);
+
+        
+        vec3 lightDirection = normalize(vec3(0.0,0.0, 3.5));
+        float intensity = dot(vNormal, lightDirection);
+        float scale = 0.65;
+        vec3 celShadedColor = vec3(intensity) * scale;
+        vec4 textureColor = texture2D(uSampler, vTextureCoord);
+
+        gl_FragColor = vec4(celShadedColor * textureColor.rgb, textureColor.a);
 
 
       }
@@ -208,11 +206,17 @@ image.onload = function () {
   gl.enable(gl.DEPTH_TEST)
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);  // lub gl.CLAMP_TO_EDGE
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);  // lub gl.CLAMP_TO_EDGE
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);  // lub gl.CLAMP_TO_EDGE
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+
+  gl.depthFunc(gl.LEQUAL); // Funkcja testu głębokości
+
+    // Ustawienie przycinania widoku
+    gl.viewport(0, 0, canvas.width, canvas.height);
 
 
   gl.generateMipmap(gl.TEXTURE_2D);
@@ -292,11 +296,11 @@ image.onload = function () {
     angle += 0.010;
     const modelViewMatrix = mat4.create();
     mat4.lookAt(modelViewMatrix, [3, 1, 0], [0, 0, 0], [0 , 2 , 0]);
-    mat4.rotateX(modelViewMatrix, modelViewMatrix, 3*Math.cos(angle));
+    //mat4.rotateX(modelViewMatrix, modelViewMatrix, 3*Math.cos(angle));
     mat4.rotateY(modelViewMatrix, modelViewMatrix, 3*Math.sin(angle));
-    //mat4.rotateZ(modelViewMatrix, modelViewMatrix, angle);
+    mat4.rotateZ(modelViewMatrix, modelViewMatrix, angle);
     gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(0.3, 0.3, 0.3, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
